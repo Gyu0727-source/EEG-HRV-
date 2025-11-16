@@ -1,0 +1,50 @@
+{
+  "name": "이찬희",
+  "gender": "남",
+  "age": 28,
+  "measurement_date": "2025-11-04",
+  "duration_seconds": 318,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      93,
+      164,
+      242
+    ],
+    "theta": [
+      75,
+      170,
+      252
+    ],
+    "alpha": [
+      229
+    ],
+    "low_beta": [],
+    "high_beta": [],
+    "gamma": [
+      114
+    ]
+  },
+  "change_types": {
+    "delta": [
+      "decrease",
+      "decrease",
+      "stable"
+    ],
+    "theta": [
+      "decrease",
+      "stable",
+      "increase"
+    ],
+    "alpha": [
+      "decrease"
+    ],
+    "low_beta": [],
+    "high_beta": [],
+    "gamma": [
+      "increase"
+    ]
+  }
+}

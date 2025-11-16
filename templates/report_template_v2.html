@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뇌파 측정 결과 리포트 - {{NAME}}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .report-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        /* 헤더 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        /* 개인 정보 */
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+            background: #f8f9fa;
+            border-bottom: 3px solid #e9ecef;
+        }
+
+        .info-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        /* 그래프 섹션 */
+        .content-section {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #212529;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .band-analysis {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+
+        .band-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: linear-gradient(to right, #f8f9fa, white);
+            border-radius: 10px;
+            border-left: 5px solid;
+        }
+
+        .band-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .band-title-text {
+            flex: 1;
+        }
+
+        .band-title-text h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .band-title-text p {
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .graph-container {
+            margin: 20px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .graph-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .analysis-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+            line-height: 1.9;
+            font-size: 15px;
+            color: #495057;
+        }
+
+        .analysis-box .phase {
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .analysis-box .interpretation {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #dee2e6;
+            color: #212529;
+            font-weight: 500;
+        }
+
+        .tech-note {
+            font-size: 13px;
+            color: #6c757d;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #dee2e6;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        /* 푸터 */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            color: #6c757d;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        /* 프린트 최적화 */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .report-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .band-analysis {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>🧠 뇌파 측정 결과 리포트</h1>
+            <p>Electroencephalography Analysis Report</p>
+        </div>
+
+        <!-- 개인 정보 -->
+        <div class="info-section">
+            <div class="info-item">
+                <div class="info-label">이름</div>
+                <div class="info-value">{{NAME}}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">성별</div>
+                <div class="info-value">{{GENDER}}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">연령</div>
+                <div class="info-value">{{AGE}}세</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">측정날짜</div>
+                <div class="info-value">{{DATE}}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">측정시간</div>
+                <div class="info-value">{{DURATION}}분</div>
+            </div>
+        </div>
+
+        <!-- 주파수 대역별 분석 -->
+        <div class="content-section">
+            <h2 class="section-title">📊 주파수 대역별 시간 변화 분석</h2>
+
+            <!-- Delta Band -->
+            <div class="band-analysis">
+                <div class="band-header" style="border-left-color: #000080;">
+                    <div class="band-icon" style="background: #000080;">D</div>
+                    <div class="band-title-text">
+                        <h3>Delta파</h3>
+                        <p>0.5-4 Hz • 깊은 이완 및 수면</p>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <img src="{{GRAPH_DELTA}}" alt="델타파 시계열 그래프">
+                </div>
+                {{ANALYSIS_DELTA}}
+            </div>
+
+            <!-- Theta Band -->
+            <div class="band-analysis">
+                <div class="band-header" style="border-left-color: #8B008B;">
+                    <div class="band-icon" style="background: #8B008B;">Θ</div>
+                    <div class="band-title-text">
+                        <h3>Theta파</h3>
+                        <p>4-8 Hz • 명상 및 창의적 사고</p>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <img src="{{GRAPH_THETA}}" alt="세타파 시계열 그래프">
+                </div>
+                {{ANALYSIS_THETA}}
+            </div>
+
+            <!-- Alpha Band -->
+            <div class="band-analysis">
+                <div class="band-header" style="border-left-color: #228B22;">
+                    <div class="band-icon" style="background: #228B22;">α</div>
+                    <div class="band-title-text">
+                        <h3>Alpha파</h3>
+                        <p>8-13 Hz • 편안한 각성 상태</p>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <img src="{{GRAPH_ALPHA}}" alt="알파파 시계열 그래프">
+                </div>
+                {{ANALYSIS_ALPHA}}
+            </div>
+
+            <!-- Beta Band -->
+            <div class="band-analysis">
+                <div class="band-header" style="border-left-color: #FFA500;">
+                    <div class="band-icon" style="background: #FFA500;">β</div>
+                    <div class="band-title-text">
+                        <h3>Beta파</h3>
+                        <p>13-30 Hz • 집중 및 활동 상태</p>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <img src="{{GRAPH_BETA}}" alt="베타파 시계열 그래프">
+                </div>
+                {{ANALYSIS_BETA}}
+            </div>
+
+            <!-- Gamma Band -->
+            <div class="band-analysis">
+                <div class="band-header" style="border-left-color: #FF4500;">
+                    <div class="band-icon" style="background: #FF4500;">γ</div>
+                    <div class="band-title-text">
+                        <h3>Gamma파</h3>
+                        <p>30-50 Hz • 고도의 인지 활동</p>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <img src="{{GRAPH_GAMMA}}" alt="감마파 시계열 그래프">
+                </div>
+                {{ANALYSIS_GAMMA}}
+            </div>
+
+            <!-- 주파수 대역 비율 분석 -->
+            <div style="margin-top: 60px; padding: 30px; background: #f8f9fa; border-radius: 15px;">
+                <h2 class="section-title" style="border-bottom-color: #4caf50;">📈 주파수 대역별 평균 파워 비율</h2>
+                <div class="graph-container">
+                    <img src="{{GRAPH_BAND_RATIO}}" alt="주파수 대역 비율 막대 그래프">
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                    <p style="line-height: 1.8; color: #495057;">
+                        <strong>📌 해석:</strong> 측정 기간 동안 각 주파수 대역이 차지하는 평균 파워 비율을 보여줍니다.
+                        가장 높은 비율을 보이는 대역(금색 테두리)이 전체 뇌파 활동에서 지배적임을 의미합니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HRV 섹션 -->
+        {{HRV_SECTION}}
+
+        <!-- 푸터 -->
+        <div class="footer">
+            <p><strong>본 보고서는 EEG 실시간 분석 시스템에 의해 자동 생성되었습니다.</strong></p>
+            <p>분석 방법: 2초 윈도우 기반 시계열 분석 • Savitzky-Golay 필터링 • 자동 변화점 감지</p>
+            <p>생성 일시: {{DATE}}</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+{
+  "name": "변미정",
+  "gender": "남",
+  "age": 48,
+  "measurement_date": "2025-11-02",
+  "duration_seconds": 309,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      98,
+      174,
+      242
+    ],
+    "theta": [
+      131,
+      242
+    ],
+    "alpha": [
+      134,
+      217
+    ],
+    "low_beta": [
+      153,
+      235
+    ],
+    "high_beta": [
+      153
+    ],
+    "gamma": []
+  },
+  "change_types": {
+    "delta": [
+      "decrease",
+      "decrease",
+      "decrease"
+    ],
+    "theta": [
+      "decrease",
+      "stable"
+    ],
+    "alpha": [
+      "increase",
+      "increase"
+    ],
+    "low_beta": [
+      "decrease",
+      "increase"
+    ],
+    "high_beta": [
+      "decrease"
+    ],
+    "gamma": []
+  }
+}

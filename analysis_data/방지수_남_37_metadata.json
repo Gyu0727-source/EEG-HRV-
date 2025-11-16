@@ -1,0 +1,42 @@
+{
+  "name": "방지수",
+  "gender": "남",
+  "age": 37,
+  "measurement_date": "2025-11-02",
+  "duration_seconds": 311,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      63,
+      211
+    ],
+    "theta": [
+      125,
+      213
+    ],
+    "alpha": [
+      72
+    ],
+    "low_beta": [],
+    "high_beta": [],
+    "gamma": []
+  },
+  "change_types": {
+    "delta": [
+      "decrease",
+      "decrease"
+    ],
+    "theta": [
+      "stable",
+      "decrease"
+    ],
+    "alpha": [
+      "stable"
+    ],
+    "low_beta": [],
+    "high_beta": [],
+    "gamma": []
+  }
+}

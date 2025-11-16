@@ -1,0 +1,50 @@
+{
+  "name": "안닌",
+  "gender": "여",
+  "age": 29,
+  "measurement_date": "2025-11-06",
+  "duration_seconds": 326,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      193,
+      258
+    ],
+    "theta": [
+      99,
+      210
+    ],
+    "alpha": [
+      87,
+      238
+    ],
+    "low_beta": [],
+    "high_beta": [
+      108,
+      200
+    ],
+    "gamma": []
+  },
+  "change_types": {
+    "delta": [
+      "decrease",
+      "decrease"
+    ],
+    "theta": [
+      "increase",
+      "increase"
+    ],
+    "alpha": [
+      "stable",
+      "increase"
+    ],
+    "low_beta": [],
+    "high_beta": [
+      "decrease",
+      "decrease"
+    ],
+    "gamma": []
+  }
+}

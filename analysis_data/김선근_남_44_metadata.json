@@ -1,0 +1,52 @@
+{
+  "name": "김선근",
+  "gender": "남",
+  "age": 44,
+  "measurement_date": "2025-11-02",
+  "duration_seconds": 275,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      160,
+      215
+    ],
+    "theta": [
+      210
+    ],
+    "alpha": [
+      210
+    ],
+    "low_beta": [
+      210
+    ],
+    "high_beta": [
+      210
+    ],
+    "gamma": [
+      210
+    ]
+  },
+  "change_types": {
+    "delta": [
+      "increase",
+      "decrease"
+    ],
+    "theta": [
+      "decrease"
+    ],
+    "alpha": [
+      "decrease"
+    ],
+    "low_beta": [
+      "decrease"
+    ],
+    "high_beta": [
+      "decrease"
+    ],
+    "gamma": [
+      "decrease"
+    ]
+  }
+}

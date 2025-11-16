@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뇌파 분석 보고서 - {{NAME}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            padding: 10px;
+        }
+
+        .info-item strong {
+            display: block;
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .info-item span {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .band-section {
+            margin: 50px 0;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .band-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .band-header {
+            padding: 20px 30px;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .band-header.delta { background: linear-gradient(135deg, #000080, #1a1aff); }
+        .band-header.theta { background: linear-gradient(135deg, #8B008B, #da00da); }
+        .band-header.alpha { background: linear-gradient(135deg, #228B22, #32cd32); }
+        .band-header.beta { background: linear-gradient(135deg, #FFA500, #ffcc00); }
+        .band-header.gamma { background: linear-gradient(135deg, #FF4500, #ff6a33); }
+
+        .band-content {
+            padding: 30px;
+            background: white;
+        }
+
+        .graph-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+
+        .graph-container img {
+            width: 100%;
+            max-width: 1000px;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .interpretation {
+            background: #f8f9fa;
+            padding: 20px;
+            border-left: 5px solid #3498db;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .interpretation p {
+            font-size: 1.05em;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            background: #e8f4f8;
+            padding: 12px 15px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-size: 0.95em;
+            margin-top: 15px;
+        }
+
+        .stats strong {
+            color: #16a085;
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid #ecf0f1;
+            text-align: center;
+            color: #7f8c8d;
+        }
+
+        .footer p {
+            margin: 10px 0;
+            font-size: 0.95em;
+        }
+
+        .tech-note {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            .band-section {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .info-box {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 뇌파 분석 보고서</h1>
+            <p class="subtitle">EEG Real-time Analysis Report</p>
+        </header>
+
+        <div class="info-box">
+            <div class="info-item">
+                <strong>이름</strong>
+                <span>{{NAME}}</span>
+            </div>
+            <div class="info-item">
+                <strong>성별</strong>
+                <span>{{GENDER}}</span>
+            </div>
+            <div class="info-item">
+                <strong>나이</strong>
+                <span>{{AGE}}세</span>
+            </div>
+            <div class="info-item">
+                <strong>측정 날짜</strong>
+                <span>{{DATE}}</span>
+            </div>
+            <div class="info-item">
+                <strong>측정 시간</strong>
+                <span>{{DURATION}}분</span>
+            </div>
+        </div>
+
+        <!-- Delta Band -->
+        <div class="band-section">
+            <div class="band-header delta">
+                델타파 (Delta, 0.5-4Hz) - 깊은 이완 및 수면
+            </div>
+            <div class="band-content">
+                <div class="graph-container">
+                    <img src="{{GRAPH_DELTA}}" alt="델타파 시계열 그래프">
+                </div>
+                {{ANALYSIS_DELTA}}
+            </div>
+        </div>
+
+        <!-- Theta Band -->
+        <div class="band-section">
+            <div class="band-header theta">
+                세타파 (Theta, 4-8Hz) - 명상 및 창의적 사고
+            </div>
+            <div class="band-content">
+                <div class="graph-container">
+                    <img src="{{GRAPH_THETA}}" alt="세타파 시계열 그래프">
+                </div>
+                {{ANALYSIS_THETA}}
+            </div>
+        </div>
+
+        <!-- Alpha Band -->
+        <div class="band-section">
+            <div class="band-header alpha">
+                알파파 (Alpha, 8-13Hz) - 편안한 각성 상태
+            </div>
+            <div class="band-content">
+                <div class="graph-container">
+                    <img src="{{GRAPH_ALPHA}}" alt="알파파 시계열 그래프">
+                </div>
+                {{ANALYSIS_ALPHA}}
+            </div>
+        </div>
+
+        <!-- Beta Band -->
+        <div class="band-section">
+            <div class="band-header beta">
+                베타파 (Beta, 13-30Hz) - 집중 및 활동 상태
+            </div>
+            <div class="band-content">
+                <div class="graph-container">
+                    <img src="{{GRAPH_BETA}}" alt="베타파 시계열 그래프">
+                </div>
+                {{ANALYSIS_BETA}}
+            </div>
+        </div>
+
+        <!-- Gamma Band -->
+        <div class="band-section">
+            <div class="band-header gamma">
+                감마파 (Gamma, 30-50Hz) - 고도의 인지 활동
+            </div>
+            <div class="band-content">
+                <div class="graph-container">
+                    <img src="{{GRAPH_GAMMA}}" alt="감마파 시계열 그래프">
+                </div>
+                {{ANALYSIS_GAMMA}}
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>본 보고서는 EEG 실시간 분석 시스템에 의해 자동 생성되었습니다.</strong></p>
+            <p class="tech-note">
+                분석 방법: 2초 윈도우 기반 시계열 분석, Savitzky-Golay 필터링, 자동 변화점 감지
+            </p>
+            <p class="tech-note">
+                생성 일시: {{DATE}}
+            </p>
+        </div>
+    </div>
+</body>
+</html>

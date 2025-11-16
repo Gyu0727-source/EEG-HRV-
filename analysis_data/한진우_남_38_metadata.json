@@ -1,0 +1,48 @@
+{
+  "name": "한진우",
+  "gender": "남",
+  "age": 38,
+  "measurement_date": "2025-11-02",
+  "duration_seconds": 312,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      96,
+      177,
+      240
+    ],
+    "theta": [
+      97,
+      228
+    ],
+    "alpha": [
+      72,
+      176,
+      243
+    ],
+    "low_beta": [],
+    "high_beta": [],
+    "gamma": []
+  },
+  "change_types": {
+    "delta": [
+      "stable",
+      "increase",
+      "decrease"
+    ],
+    "theta": [
+      "increase",
+      "increase"
+    ],
+    "alpha": [
+      "stable",
+      "stable",
+      "decrease"
+    ],
+    "low_beta": [],
+    "high_beta": [],
+    "gamma": []
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "name": "심유리",
+  "gender": "여",
+  "age": 42,
+  "measurement_date": "2025-11-06",
+  "duration_seconds": 309,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      179,
+      246
+    ],
+    "theta": [
+      179,
+      242
+    ],
+    "alpha": [
+      129,
+      213
+    ],
+    "low_beta": [
+      129,
+      213
+    ],
+    "high_beta": [
+      78,
+      214
+    ],
+    "gamma": [
+      78
+    ]
+  },
+  "change_types": {
+    "delta": [
+      "decrease",
+      "decrease"
+    ],
+    "theta": [
+      "decrease",
+      "decrease"
+    ],
+    "alpha": [
+      "increase",
+      "increase"
+    ],
+    "low_beta": [
+      "increase",
+      "increase"
+    ],
+    "high_beta": [
+      "decrease",
+      "increase"
+    ],
+    "gamma": [
+      "decrease"
+    ]
+  }
+}

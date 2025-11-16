@@ -1,0 +1,58 @@
+{
+  "name": "이동미",
+  "gender": "여",
+  "age": 44,
+  "measurement_date": "2025-11-02",
+  "duration_seconds": 313,
+  "sampling_rate": 250,
+  "window_size": 2.0,
+  "overlap": 0.5,
+  "change_points": {
+    "delta": [
+      62,
+      135,
+      197
+    ],
+    "theta": [
+      135,
+      245
+    ],
+    "alpha": [
+      122,
+      194
+    ],
+    "low_beta": [],
+    "high_beta": [
+      77,
+      196
+    ],
+    "gamma": [
+      77,
+      196
+    ]
+  },
+  "change_types": {
+    "delta": [
+      "decrease",
+      "increase",
+      "decrease"
+    ],
+    "theta": [
+      "increase",
+      "decrease"
+    ],
+    "alpha": [
+      "decrease",
+      "decrease"
+    ],
+    "low_beta": [],
+    "high_beta": [
+      "decrease",
+      "increase"
+    ],
+    "gamma": [
+      "decrease",
+      "increase"
+    ]
+  }
+}

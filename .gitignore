@@ -41,3 +41,22 @@ Thumbs.db
 *.tmp
 *.bak
 *.log
+
+# Generated analysis results (exclude from git)
+# Keep directory structure but ignore generated files
+analysis_data/*.csv
+analysis_data/*.json
+!analysis_data/.gitkeep
+
+# Generated graphs (too large for git)
+# Only commit new graph types as examples
+graphs/*.png
+!graphs/*_segments_comparison.png
+!graphs/*_ratio_comparison.png
+!graphs/.gitkeep
+
+# Generated reports
+reports/*.html
+reports/*.pdf
+reports/*.xlsx
+!reports/.gitkeep

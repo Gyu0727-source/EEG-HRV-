@@ -382,6 +382,30 @@ def generate_graphs(analysis_result, info):
             info=info
         )
 
+    # 6. 구간 평균 비교 그래프 생성 (새로 추가!)
+    if 'segments_analysis' in analysis_result:
+        segments_path = os.path.join(
+            config.GRAPHS_DIR,
+            f"{info['name']}_{info['gender']}_{info['age']}_segments_comparison.png"
+        )
+        graph_paths['segments_comparison'] = plot_segments_comparison(
+            segments_analysis=analysis_result['segments_analysis'],
+            info=info,
+            save_path=segments_path
+        )
+
+    # 7. 비율 지표 종합 비교 그래프 생성 (새로 추가!)
+    if 'ratio_metrics' in analysis_result:
+        ratio_comparison_path = os.path.join(
+            config.GRAPHS_DIR,
+            f"{info['name']}_{info['gender']}_{info['age']}_ratio_comparison.png"
+        )
+        graph_paths['ratio_comparison'] = plot_ratio_comparison(
+            ratio_metrics=analysis_result['ratio_metrics'],
+            info=info,
+            save_path=ratio_comparison_path
+        )
+
     return graph_paths
 
 
@@ -1019,3 +1043,202 @@ def plot_brain_balance_gauge(ax, fp1_total, fp2_total):
     ax.text(0, 0.35, status, ha='center', fontsize=13, fontweight='bold',
             bbox=dict(boxstyle='round', facecolor=status_color,
                      edgecolor='white', alpha=0.6, linewidth=2))
+
+    # 축 범위 및 비율
+    ax.set_xlim(-1.3, 1.3)
+    ax.set_ylim(-0.5, 1.2)
+    ax.set_aspect('equal')
+    ax.axis('off')
+
+
+def plot_segments_comparison(segments_analysis, info, save_path):
+    """
+    주파수 대역별 구간 평균 비교 그래프 생성
+
+    의미있는 변화(20% 이상)를 시각적으로 표시
+
+    Parameters:
+    -----------
+    segments_analysis : dict
+        구간별 분석 결과
+    info : dict
+        개인 정보
+    save_path : str
+        저장 경로
+
+    Returns:
+    --------
+    save_path : str
+        저장된 파일 경로
+    """
+    # 6개 주파수 대역 서브플롯
+    fig, axes = plt.subplots(3, 2, figsize=(15, 12), dpi=config.GRAPH_DPI)
+    axes = axes.flatten()
+
+    fig.suptitle(f'{info["name"]}님의 뇌파 구간별 평균 분석\n(의미있는 변화: 20% 이상)',
+                 fontsize=18, fontweight='bold', y=0.995)
+
+    for idx, (band_name, band_data) in enumerate(segments_analysis.items()):
+        ax = axes[idx]
+
+        segments = band_data['segments']
+        significant_changes = band_data['significant_changes']
+        overall_trend = band_data['overall_trend']
+
+        if len(segments) == 0:
+            continue
+
+        # 구간별 평균값
+        segment_means = [seg['mean'] for seg in segments]
+        segment_labels = [f"{seg['start_min']}-{seg['end_min']}분" for seg in segments]
+
+        # 바 그래프
+        band_info = config.BAND_INFO[band_name]
+        color = config.COLORS[band_name]
+
+        bars = ax.bar(range(len(segments)), segment_means, color=color, alpha=0.7, edgecolor='black', linewidth=1.5)
+
+        # 의미있는 변화 표시
+        for change in significant_changes:
+            from_idx = change['from_segment']
+            to_idx = change['to_segment']
+
+            # 화살표 색상
+            arrow_color = '#4caf50' if change['change_type'] == 'increase' else '#f44336'
+            arrow_style = '↑' if change['change_type'] == 'increase' else '↓'
+
+            # 두 막대 사이에 화살표
+            x_start = from_idx
+            x_end = to_idx
+            y_start = segment_means[from_idx]
+            y_end = segment_means[to_idx]
+
+            ax.annotate('', xy=(x_end, y_end), xytext=(x_start, y_start),
+                       arrowprops=dict(arrowstyle='->', color=arrow_color, lw=3, alpha=0.8))
+
+            # 변화율 텍스트
+            mid_x = (x_start + x_end) / 2
+            mid_y = max(y_start, y_end) + (max(segment_means) * 0.05)
+            ax.text(mid_x, mid_y, f"{arrow_style} {abs(change['change_pct']):.0f}%",
+                   ha='center', va='bottom', fontsize=10, fontweight='bold',
+                   color=arrow_color,
+                   bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=arrow_color, alpha=0.9))
+
+        # 전체 평균선
+        overall_mean = np.mean(segment_means)
+        ax.axhline(y=overall_mean, color='gray', linestyle='--', linewidth=1.5, alpha=0.5, label='전체 평균')
+
+        # 그래프 꾸미기
+        ax.set_xticks(range(len(segments)))
+        ax.set_xticklabels(segment_labels, fontsize=9)
+        ax.set_ylabel('파워 (µV²)', fontsize=11)
+        ax.set_title(f"{band_info['name_kr']} ({band_info['range']}) - 트렌드: {overall_trend}",
+                    fontsize=13, fontweight='bold', color=color)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.legend(fontsize=9)
+
+        # 배경
+        ax.set_facecolor('#f9f9f9')
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=config.GRAPH_DPI, bbox_inches='tight', facecolor='white')
+    plt.close()
+
+    return save_path
+
+
+def plot_ratio_comparison(ratio_metrics, info, save_path):
+    """
+    주요 비율 지표 비교 그래프 생성
+
+    Parameters:
+    -----------
+    ratio_metrics : dict
+        비율 지표 결과
+    info : dict
+        개인 정보
+    save_path : str
+        저장 경로
+
+    Returns:
+    --------
+    save_path : str
+        저장된 파일 경로
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10), dpi=config.GRAPH_DPI)
+    axes = axes.flatten()
+
+    fig.suptitle(f'{info["name"]}님의 뇌파 비율 지표 종합 분석',
+                 fontsize=18, fontweight='bold', y=0.995)
+
+    # 1. Theta/Alpha 비율 (명상 깊이)
+    ax = axes[0]
+    ratio_data = ratio_metrics['theta_alpha_ratio']
+    time_range = range(len(ratio_data['timeseries']))
+
+    ax.plot(time_range, ratio_data['timeseries'], color='#9c27b0', linewidth=2, alpha=0.7)
+    ax.axhline(y=ratio_data['mean'], color='#4caf50', linestyle='--', linewidth=2, label=f"평균: {ratio_data['mean']:.2f}")
+    ax.axhline(y=1.0, color='gray', linestyle=':', linewidth=1.5, alpha=0.5, label='기준선 (1.0)')
+
+    ax.fill_between(time_range, 1.0, 2.0, alpha=0.1, color='#9c27b0', label='명상 구간 (>1.0)')
+    ax.set_title('Theta/Alpha 비율 (명상 깊이 지표)', fontsize=13, fontweight='bold')
+    ax.set_ylabel('비율', fontsize=11)
+    ax.set_xlabel('시간 (초)', fontsize=11)
+    ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+
+    # 2. Beta/Alpha 비율 (스트레스 지표) - 새로 추가!
+    ax = axes[1]
+    ratio_data = ratio_metrics['beta_alpha_ratio']
+
+    ax.plot(time_range, ratio_data['timeseries'], color='#ff5722', linewidth=2, alpha=0.7)
+    ax.axhline(y=ratio_data['mean'], color='#4caf50', linestyle='--', linewidth=2, label=f"평균: {ratio_data['mean']:.2f}")
+    ax.axhline(y=1.5, color='red', linestyle=':', linewidth=1.5, alpha=0.5, label='스트레스 기준 (1.5)')
+    ax.axhline(y=0.8, color='blue', linestyle=':', linewidth=1.5, alpha=0.5, label='이완 기준 (0.8)')
+
+    ax.fill_between(time_range, 1.5, 3.0, alpha=0.1, color='#ff5722', label='스트레스 구간 (>1.5)')
+    ax.set_title(f'Beta/Alpha 비율 (스트레스 지표) - 상태: {ratio_data["current_state"]}',
+                fontsize=13, fontweight='bold')
+    ax.set_ylabel('비율', fontsize=11)
+    ax.set_xlabel('시간 (초)', fontsize=11)
+    ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+
+    # 3. 휴식/활동 비율 - 새로 추가!
+    ax = axes[2]
+    ratio_data = ratio_metrics['relaxation_activation_ratio']
+
+    ax.plot(time_range, ratio_data['timeseries'], color='#2196f3', linewidth=2, alpha=0.7)
+    ax.axhline(y=ratio_data['mean'], color='#4caf50', linestyle='--', linewidth=2, label=f"평균: {ratio_data['mean']:.2f}")
+    ax.axhline(y=1.0, color='gray', linestyle=':', linewidth=1.5, alpha=0.5, label='균형선 (1.0)')
+
+    ax.fill_between(time_range, 1.2, 3.0, alpha=0.1, color='#2196f3', label='휴식 우세 (>1.2)')
+    ax.set_title(f'휴식/활동 비율 - 상태: {ratio_data["current_state"]}',
+                fontsize=13, fontweight='bold')
+    ax.set_ylabel('비율 (Alpha+Theta)/(Beta+Gamma)', fontsize=11)
+    ax.set_xlabel('시간 (초)', fontsize=11)
+    ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+
+    # 4. SMR 비율 (집중력 지표) - 새로 추가!
+    ax = axes[3]
+    ratio_data = ratio_metrics['smr_ratio']
+
+    ax.plot(time_range, ratio_data['timeseries'], color='#ff9800', linewidth=2, alpha=0.7)
+    ax.axhline(y=ratio_data['mean'], color='#4caf50', linestyle='--', linewidth=2, label=f"평균: {ratio_data['mean']:.2f}")
+    ax.axhline(y=1.5, color='green', linestyle=':', linewidth=1.5, alpha=0.5, label='좋은 집중 (1.5)')
+    ax.axhline(y=0.8, color='red', linestyle=':', linewidth=1.5, alpha=0.5, label='집중력 저하 (0.8)')
+
+    ax.fill_between(time_range, 1.5, 3.0, alpha=0.1, color='#4caf50', label='좋은 집중 구간 (>1.5)')
+    ax.set_title(f'SMR 비율 (집중력 지표) - 상태: {ratio_data["current_state"]}',
+                fontsize=13, fontweight='bold')
+    ax.set_ylabel('비율 (Low Beta/Theta)', fontsize=11)
+    ax.set_xlabel('시간 (초)', fontsize=11)
+    ax.legend(fontsize=9)
+    ax.grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=config.GRAPH_DPI, bbox_inches='tight', facecolor='white')
+    plt.close()
+
+    return save_path

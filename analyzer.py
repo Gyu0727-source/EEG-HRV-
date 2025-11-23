@@ -332,10 +332,13 @@ def analyze_eeg(raw_file, info):
         change_points[band] = cp
         change_types[band] = ct
 
-    # 6. 비율 지표 계산 (비웨이브 명상/집중 알고리즘)
+    # 6. 구간별 평균 분석 (의미있는 변화 감지)
+    segments_analysis = analyze_time_segments(timeseries, band_powers_smooth, n_segments=4)
+
+    # 7. 비율 지표 계산 (비웨이브 명상/집중 알고리즘 + 추가 지표)
     ratio_metrics = calculate_ratio_metrics(band_powers_smooth)
 
-    # 7. HRV 지표 계산
+    # 8. HRV 지표 계산
     hrv_metrics = calculate_hrv_metrics(fp1_clean, fp2_clean)
 
     return {
@@ -346,12 +349,143 @@ def analyze_eeg(raw_file, info):
         'fp2_powers': fp2_powers_smooth,
         'change_points': change_points,
         'change_types': change_types,
+        'segments_analysis': segments_analysis,  # 새로 추가!
         'ratio_metrics': ratio_metrics,
         'hrv_metrics': hrv_metrics,
         'duration': data['duration'],
         'sampling_rate': data['sampling_rate'],
         'info': info
     }
+
+
+def analyze_time_segments(timeseries_data, band_powers_smooth, n_segments=4):
+    """
+    측정을 n개 시간 구간으로 나누고 각 구간의 통계 분석
+
+    이 방식이 변화점보다 훨씬 명확하고 의미있음:
+    - 노이즈에 강함 (평균값 사용)
+    - 해석이 쉬움 (구간별 비교)
+    - 생리학적으로 의미있는 변화만 포착 (20% 이상)
+
+    Parameters:
+    -----------
+    timeseries_data : dict
+        시계열 데이터 (time 포함)
+    band_powers_smooth : dict
+        스무딩된 주파수 대역별 파워
+    n_segments : int
+        구간 개수 (기본 4개: 초기/초반/중반/후반)
+
+    Returns:
+    --------
+    segments_analysis : dict
+        {
+            'delta': {
+                'segments': [구간별 통계],
+                'significant_changes': [의미있는 변화들]
+            },
+            ...
+        }
+    """
+    time_array = timeseries_data['time']
+    total_duration = time_array[-1] - time_array[0]
+    segment_duration = total_duration / n_segments
+
+    segments_analysis = {}
+
+    for band_name, power_data in band_powers_smooth.items():
+        segments = []
+
+        for i in range(n_segments):
+            # 시간 범위
+            start_time = time_array[0] + i * segment_duration
+            end_time = start_time + segment_duration
+
+            # 해당 구간의 데이터 추출
+            mask = (time_array >= start_time) & (time_array < end_time)
+            segment_data = power_data[mask]
+
+            if len(segment_data) > 0:
+                segment_info = {
+                    'segment_idx': i,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'start_min': int(start_time // 60),
+                    'end_min': int(end_time // 60),
+                    'mean': np.mean(segment_data),
+                    'median': np.median(segment_data),
+                    'std': np.std(segment_data),
+                    'min': np.min(segment_data),
+                    'max': np.max(segment_data)
+                }
+                segments.append(segment_info)
+
+        # 인접 구간 간 의미있는 변화 감지 (20% 이상)
+        significant_changes = []
+        for i in range(len(segments) - 1):
+            curr_mean = segments[i]['mean']
+            next_mean = segments[i+1]['mean']
+
+            if curr_mean > 0:  # 0으로 나누기 방지
+                change_pct = ((next_mean - curr_mean) / curr_mean) * 100
+
+                if abs(change_pct) >= 20:  # 20% 이상 변화만
+                    change_info = {
+                        'from_segment': i,
+                        'to_segment': i + 1,
+                        'from_period': f"{segments[i]['start_min']}-{segments[i]['end_min']}분",
+                        'to_period': f"{segments[i+1]['start_min']}-{segments[i+1]['end_min']}분",
+                        'from_mean': curr_mean,
+                        'to_mean': next_mean,
+                        'change_pct': change_pct,
+                        'change_type': 'increase' if change_pct > 0 else 'decrease',
+                        'magnitude': 'large' if abs(change_pct) >= 50 else 'moderate'
+                    }
+                    significant_changes.append(change_info)
+
+        segments_analysis[band_name] = {
+            'segments': segments,
+            'significant_changes': significant_changes,
+            'n_segments': len(segments),
+            'overall_trend': _determine_overall_trend(segments)
+        }
+
+    return segments_analysis
+
+
+def _determine_overall_trend(segments):
+    """
+    전체 트렌드 판단 (초기 vs 후기 비교)
+
+    Parameters:
+    -----------
+    segments : list
+        구간별 통계 정보
+
+    Returns:
+    --------
+    trend : str
+        'increasing', 'decreasing', 'stable', 'fluctuating'
+    """
+    if len(segments) < 2:
+        return 'stable'
+
+    first_mean = segments[0]['mean']
+    last_mean = segments[-1]['mean']
+
+    if first_mean > 0:
+        change_pct = ((last_mean - first_mean) / first_mean) * 100
+
+        if change_pct >= 30:
+            return 'increasing'  # 초기 → 후기 30% 이상 증가
+        elif change_pct <= -30:
+            return 'decreasing'  # 초기 → 후기 30% 이상 감소
+        elif abs(change_pct) < 15:
+            return 'stable'  # 15% 미만 변화
+        else:
+            return 'fluctuating'  # 중간 정도 변화
+
+    return 'stable'
 
 
 def calculate_ratio_metrics(band_powers_smooth):
@@ -465,6 +599,68 @@ def calculate_ratio_metrics(band_powers_smooth):
         'concentration_ratio': concentration_ratio,
         'meditation_ratio': meditation_ratio,
         'pattern_type': 'meditation' if meditation_ratio > 0.3 else ('concentration' if concentration_ratio > 0.3 else 'baseline')
+    }
+
+    # 4. Beta/Alpha ratio (스트레스/긴장 지표) - 추가!
+    total_beta = low_beta + high_beta
+    beta_alpha_ratio = total_beta / alpha_safe
+
+    # 추세 분석
+    beta_alpha_slope = np.polyfit(range(len(beta_alpha_ratio)), beta_alpha_ratio, 1)[0]
+
+    metrics['beta_alpha_ratio'] = {
+        'timeseries': beta_alpha_ratio,
+        'mean': np.mean(beta_alpha_ratio),
+        'median': np.median(beta_alpha_ratio),
+        'std': np.std(beta_alpha_ratio),
+        'trend_slope': beta_alpha_slope,
+        'interpretation': {
+            'high': 'Beta > Alpha: 스트레스/긴장 상태 (비율 > 1.5)',
+            'normal': 'Beta ≈ Alpha: 정상 각성 상태 (0.8 ~ 1.5)',
+            'low': 'Alpha > Beta: 이완 우세 상태 (비율 < 0.8)'
+        },
+        'current_state': 'high' if np.mean(beta_alpha_ratio) > 1.5 else (
+            'low' if np.mean(beta_alpha_ratio) < 0.8 else 'normal'
+        )
+    }
+
+    # 5. (Alpha+Theta) / (Beta+Gamma) 비율 (휴식 vs 활동 지표) - 추가!
+    relaxation = alpha + theta
+    activation = total_beta + gamma
+
+    activation_safe = np.where(activation == 0, 1e-10, activation)
+    relaxation_activation_ratio = relaxation / activation_safe
+
+    metrics['relaxation_activation_ratio'] = {
+        'timeseries': relaxation_activation_ratio,
+        'mean': np.mean(relaxation_activation_ratio),
+        'median': np.median(relaxation_activation_ratio),
+        'interpretation': {
+            'high': '휴식 우세 (비율 > 1.2): Alpha+Theta가 높음',
+            'balanced': '균형 상태 (0.8 ~ 1.2): 적절한 각성-이완 균형',
+            'low': '활동 우세 (비율 < 0.8): Beta+Gamma가 높음'
+        },
+        'current_state': 'high' if np.mean(relaxation_activation_ratio) > 1.2 else (
+            'low' if np.mean(relaxation_activation_ratio) < 0.8 else 'balanced'
+        )
+    }
+
+    # 6. SMR (Sensory Motor Rhythm) 비율: Low Beta/Theta - 추가!
+    # SMR은 집중력과 관련된 중요한 지표
+    smr_ratio = low_beta / theta_safe
+
+    metrics['smr_ratio'] = {
+        'timeseries': smr_ratio,
+        'mean': np.mean(smr_ratio),
+        'median': np.median(smr_ratio),
+        'interpretation': {
+            'high': 'SMR 높음 (비율 > 1.5): 좋은 집중 상태',
+            'normal': 'SMR 정상 (0.8 ~ 1.5): 보통 집중력',
+            'low': 'SMR 낮음 (비율 < 0.8): 집중력 저하 또는 이완 상태'
+        },
+        'current_state': 'high' if np.mean(smr_ratio) > 1.5 else (
+            'low' if np.mean(smr_ratio) < 0.8 else 'normal'
+        )
     }
 
     return metrics

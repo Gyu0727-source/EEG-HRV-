@@ -23,9 +23,134 @@ except ImportError:
     print("pip install heartpy")
 
 
+def assess_ppg_quality(ppg_signal, sample_rate=250):
+    """
+    PPG 신호 품질 평가
+
+    품질이 낮으면 BPM 200+ 같은 이상한 값이 나올 수 있음
+    품질 등급에 따라 HRV 분석 진행 여부 결정
+
+    Parameters:
+    -----------
+    ppg_signal : ndarray
+        PPG 신호
+    sample_rate : int
+        샘플링 레이트
+
+    Returns:
+    --------
+    quality_report : dict
+        {
+            'grade': str,  # 'excellent', 'good', 'poor'
+            'score': float,  # 0-100 점수
+            'issues': list,  # 발견된 문제들
+            'can_analyze': bool,  # HRV 분석 가능 여부
+            'message': str  # 품질 평가 메시지
+        }
+    """
+    issues = []
+    score = 100
+    min_duration = 30  # 최소 30초 필요
+
+    # 1. 기본 체크: 신호 길이
+    duration = len(ppg_signal) / sample_rate
+    if duration < min_duration:
+        issues.append(f"신호 길이 부족 ({duration:.1f}초 < {min_duration}초)")
+        score -= 50
+
+    # 2. 결측치 및 이상값 체크
+    nan_ratio = np.isnan(ppg_signal).sum() / len(ppg_signal)
+    if nan_ratio > 0.01:  # 1% 이상 NaN
+        issues.append(f"결측치 과다 ({nan_ratio*100:.1f}%)")
+        score -= 30
+
+    inf_count = np.isinf(ppg_signal).sum()
+    if inf_count > 0:
+        issues.append(f"무한대 값 감지 ({inf_count}개)")
+        score -= 30
+
+    # 유효한 데이터만 추출
+    valid_signal = ppg_signal[~np.isnan(ppg_signal) & ~np.isinf(ppg_signal)]
+
+    if len(valid_signal) < sample_rate * 10:  # 최소 10초 유효 데이터
+        return {
+            'grade': 'poor',
+            'score': 0,
+            'issues': issues + ["유효 데이터 부족 (<10초)"],
+            'can_analyze': False,
+            'message': "PPG 데이터 품질이 매우 낮습니다. 센서 접촉 불량 또는 측정 오류가 의심됩니다."
+        }
+
+    # 3. 신호 범위 체크
+    signal_std = np.std(valid_signal)
+    signal_mean = np.mean(valid_signal)
+
+    if signal_std < 0.1:  # 표준편차가 너무 작음
+        issues.append(f"신호 변동 없음 (STD={signal_std:.3f})")
+        score -= 40
+
+    # 4. 변동 계수 (Coefficient of Variation)
+    if abs(signal_mean) > 0.01:
+        cv = signal_std / abs(signal_mean)
+        if cv < 0.01:  # 변동이 거의 없음
+            issues.append(f"신호가 너무 일정함 (CV={cv:.3f})")
+            score -= 30
+    else:
+        issues.append("신호 평균이 0에 가까움 (센서 오류 의심)")
+        score -= 40
+
+    # 5. 이상치 비율 체크 (3 표준편차 벗어난 값)
+    if signal_std > 0:
+        z_scores = np.abs((valid_signal - signal_mean) / signal_std)
+        outlier_ratio = (z_scores > 3).sum() / len(valid_signal)
+
+        if outlier_ratio > 0.05:  # 5% 이상 이상치
+            issues.append(f"이상치 과다 ({outlier_ratio*100:.1f}%)")
+            score -= 20
+
+    # 6. 신호 범위 체크
+    signal_range = np.max(valid_signal) - np.min(valid_signal)
+    if signal_range < 1.0:  # 범위가 너무 작음
+        issues.append(f"신호 범위 부족 (range={signal_range:.2f})")
+        score -= 20
+
+    # 점수 범위 제한
+    score = max(0, min(100, score))
+
+    # 등급 결정
+    if score >= 70:
+        grade = 'excellent'
+        can_analyze = True
+        message = "PPG 데이터 품질이 우수합니다. HRV 분석을 진행합니다."
+    elif score >= 40:
+        grade = 'good'
+        can_analyze = True
+        message = "PPG 데이터 품질이 양호합니다. HRV 분석을 진행하나 일부 부정확할 수 있습니다."
+    else:
+        grade = 'poor'
+        can_analyze = False
+        message = "PPG 데이터 품질이 낮아 HRV 분석을 수행하지 않습니다. 센서 재부착 후 재측정을 권장합니다."
+
+    return {
+        'grade': grade,
+        'score': score,
+        'issues': issues,
+        'can_analyze': can_analyze,
+        'message': message,
+        'stats': {
+            'duration': duration,
+            'mean': signal_mean,
+            'std': signal_std,
+            'valid_ratio': len(valid_signal) / len(ppg_signal)
+        }
+    }
+
+
 def analyze_hrv(ppg_signal, sample_rate=250):
     """
     HRV (Heart Rate Variability) 분석
+
+    품질 검사 후 분석 진행 여부 결정
 
     Parameters:
     -----------
@@ -40,13 +165,28 @@ def analyze_hrv(ppg_signal, sample_rate=250):
         {
             'time_domain': {...},  # Time domain 지표
             'frequency_domain': {...},  # Frequency domain 지표
-            'status': str  # 'success' or 'failed'
+            'quality': {...},  # 품질 평가 결과
+            'status': str  # 'success', 'failed', 'poor_quality'
         }
     """
+    # 1. PPG 품질 검사 먼저 수행
+    quality_report = assess_ppg_quality(ppg_signal, sample_rate)
+
+    if not quality_report['can_analyze']:
+        # 품질이 낮아서 분석 불가
+        return {
+            'status': 'poor_quality',
+            'quality': quality_report,
+            'time_domain': {},
+            'frequency_domain': {},
+            'message': quality_report['message']
+        }
+
     if not HEARTPY_AVAILABLE:
         return {
             'status': 'failed',
             'error': 'heartpy not installed',
+            'quality': quality_report,
             'time_domain': {},
             'frequency_domain': {}
         }
@@ -54,6 +194,7 @@ def analyze_hrv(ppg_signal, sample_rate=250):
     if not config.HRV_ENABLED:
         return {
             'status': 'disabled',
+            'quality': quality_report,
             'time_domain': {},
             'frequency_domain': {}
         }
@@ -77,6 +218,7 @@ def analyze_hrv(ppg_signal, sample_rate=250):
 
         return {
             'status': 'success',
+            'quality': quality_report,  # 품질 정보 포함
             'time_domain': time_domain,
             'frequency_domain': frequency_domain,
             'working_data': wd,  # 원시 작업 데이터
@@ -88,6 +230,7 @@ def analyze_hrv(ppg_signal, sample_rate=250):
         return {
             'status': 'failed',
             'error': str(e),
+            'quality': quality_report,  # 품질 정보 포함
             'time_domain': {},
             'frequency_domain': {}
         }

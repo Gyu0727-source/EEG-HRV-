@@ -501,6 +501,81 @@ def plot_band_ratio_bar(band_powers_smooth, save_path, info):
     return save_path
 
 
+def plot_hrv_poor_quality(hrv_metrics, save_path, info):
+    """
+    PPG 품질이 낮을 때 경고 메시지 표시
+
+    Parameters:
+    -----------
+    hrv_metrics : dict
+        HRV 분석 결과 (품질 정보 포함)
+    save_path : str
+        저장 경로
+    info : dict
+        개인 정보
+
+    Returns:
+    --------
+    save_path : str
+        저장된 파일 경로
+    """
+    fig, ax = plt.subplots(figsize=(12, 8), dpi=config.GRAPH_DPI)
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+    ax.axis('off')
+    fig.patch.set_facecolor('#fff8e1')  # 연한 노란색 배경
+
+    quality = hrv_metrics.get('quality', {})
+
+    # 경고 아이콘 (큰 느낌표)
+    ax.text(5, 8, '⚠', fontsize=120, ha='center', va='center', color='#ff9800')
+
+    # 제목
+    ax.text(5, 6.5, 'PPG 데이터 품질 경고', fontsize=24, ha='center', fontweight='bold', color='#e65100')
+
+    # 주요 메시지
+    message = quality.get('message', '데이터 품질이 낮아 HRV 분석을 수행하지 않습니다.')
+    ax.text(5, 5.5, message, fontsize=14, ha='center', color='#333',
+            bbox=dict(boxstyle='round,pad=0.8', facecolor='white', edgecolor='#ff9800', linewidth=2))
+
+    # 품질 점수
+    score = quality.get('score', 0)
+    ax.text(5, 4.5, f'품질 점수: {score}/100', fontsize=16, ha='center',
+            fontweight='bold', color='#d32f2f')
+
+    # 발견된 문제들
+    issues = quality.get('issues', [])
+    if issues:
+        ax.text(5, 3.8, '발견된 문제:', fontsize=13, ha='center', fontweight='bold', color='#555')
+
+        y_pos = 3.3
+        for i, issue in enumerate(issues[:5]):  # 최대 5개만 표시
+            ax.text(5, y_pos - i*0.4, f'• {issue}', fontsize=11, ha='center', color='#666')
+
+    # 권장 사항
+    ax.text(5, 1.5, '💡 권장 사항', fontsize=14, ha='center', fontweight='bold', color='#1976d2')
+    recommendations = [
+        '1. PPG 센서를 귀 또는 손가락에 다시 부착',
+        '2. 측정 중 움직임 최소화',
+        '3. 충분한 측정 시간 확보 (최소 3분 이상)',
+        '4. 재측정 권장'
+    ]
+
+    y_pos = 1.0
+    for i, rec in enumerate(recommendations):
+        ax.text(5, y_pos - i*0.35, rec, fontsize=10, ha='center', color='#555')
+
+    # 저장
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=config.GRAPH_DPI, bbox_inches='tight', facecolor='#fff8e1')
+    plt.close(fig)
+
+    print(f"⚠ PPG 품질 경고 그래프 저장: {save_path}")
+    print(f"   품질 점수: {score}/100 - {message}")
+
+    return save_path
+
+
 def plot_hrv_visualization(hrv_metrics, save_path, info):
     """
     HRV 지표 시각화 - 4개 서브플롯으로 구성
@@ -509,6 +584,8 @@ def plot_hrv_visualization(hrv_metrics, save_path, info):
     2. 주파수 영역 파이 차트 (VLF, LF, HF)
     3. 스트레스 수준 가로 막대 게이지
     4. 자율신경 균형 좌우 대칭 막대
+
+    PPG 품질이 낮으면 경고 메시지 표시
 
     Parameters:
     -----------
@@ -524,6 +601,16 @@ def plot_hrv_visualization(hrv_metrics, save_path, info):
     save_path : str
         저장된 파일 경로
     """
+    # 데이터 형식 검증
+    if not isinstance(hrv_metrics, dict):
+        print(f"경고: HRV 메트릭이 딕셔너리가 아닙니다: {type(hrv_metrics)}")
+        return save_path
+
+    # PPG 품질 확인 - 품질이 낮으면 경고 이미지 생성
+    # 'status' 필드가 있으면 PPG 기반 (hrv_analyzer.py), 없으면 EEG 기반 (analyzer.py)
+    if hrv_metrics.get('status') == 'poor_quality':
+        return plot_hrv_poor_quality(hrv_metrics, save_path, info)
+
     fig = plt.figure(figsize=(16, 10), dpi=config.GRAPH_DPI)
     fig.patch.set_facecolor('white')
 
@@ -531,9 +618,9 @@ def plot_hrv_visualization(hrv_metrics, save_path, info):
     gs = fig.add_gridspec(2, 2, hspace=0.3, wspace=0.3,
                           left=0.08, right=0.95, top=0.92, bottom=0.08)
 
-    time_domain = hrv_metrics['time_domain']
-    freq_domain = hrv_metrics['frequency_domain']
-    interp = hrv_metrics['interpretation']
+    time_domain = hrv_metrics.get('time_domain', {})
+    freq_domain = hrv_metrics.get('frequency_domain', {})
+    interp = hrv_metrics.get('interpretation', {})
 
     # 1. 시간 영역 지표 게이지 차트 (좌상단)
     ax1 = fig.add_subplot(gs[0, 0])

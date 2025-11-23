@@ -961,12 +961,12 @@ def plot_brain_balance(fp1_power, fp2_power, save_path, info):
     save_path : str
         저장된 파일 경로
     """
-    fig = plt.figure(figsize=(14, 10), dpi=config.GRAPH_DPI)
+    fig = plt.figure(figsize=(16, 12), dpi=config.GRAPH_DPI)
     fig.patch.set_facecolor('white')
 
     # 2x3 그리드 레이아웃 (6개 주파수 대역)
     gs = fig.add_gridspec(3, 2, hspace=0.4, wspace=0.3,
-                          left=0.08, right=0.95, top=0.88, bottom=0.12)
+                          left=0.08, right=0.95, top=0.84, bottom=0.22)
 
     # 전체 제목
     fig.suptitle(f'🧠 좌뇌/우뇌 균형도 분석 - {info["name"]}',
@@ -981,9 +981,9 @@ def plot_brain_balance(fp1_power, fp2_power, save_path, info):
 
         plot_brain_balance_timeseries(ax, fp1_power[band], fp2_power[band], band)
 
-    # 하단에 전체 평균 게이지 추가
+    # 하단에 전체 평균 게이지 추가 (더 큰 영역 할당)
     gs_bottom = fig.add_gridspec(1, 1, hspace=0, wspace=0,
-                                  left=0.15, right=0.85, top=0.10, bottom=0.02)
+                                  left=0.12, right=0.88, top=0.18, bottom=0.02)
     ax_gauge = fig.add_subplot(gs_bottom[0, 0])
 
     # 전체 평균 계산
@@ -1045,10 +1045,8 @@ def plot_brain_balance_timeseries(ax, fp1_data, fp2_data, band_name):
 
 
 def plot_brain_balance_gauge(ax, fp1_total, fp2_total):
-    """전체 평균 좌뇌/우뇌 균형 게이지"""
+    """전체 평균 좌뇌/우뇌 균형 게이지 - 개선된 버전"""
     ax.set_facecolor('white')
-    ax.set_xlim(-1.3, 1.3)
-    ax.set_ylim(-0.4, 1.3)
     ax.axis('off')
 
     # 전체 평균 비율 계산
@@ -1062,61 +1060,83 @@ def plot_brain_balance_gauge(ax, fp1_total, fp2_total):
         balance_index = 0
 
     # 제목
-    ax.text(0, 1.2, '전체 평균 좌뇌/우뇌 균형', ha='center', fontsize=14, fontweight='bold')
+    ax.text(0, 1.45, '전체 평균 좌뇌/우뇌 균형', ha='center', fontsize=18, fontweight='bold')
 
-    # 반원 게이지 배경 그리기 (wedge 사용)
+    # 반원 게이지 배경 그리기 (wedge 사용) - 더 두꺼운 게이지
     from matplotlib.patches import Wedge
 
+    gauge_radius = 1.2  # 게이지 반지름 증가
+    gauge_width = 0.15  # 게이지 두께 증가
+
     # 좌뇌 영역 (빨강) - 180~135도
-    wedge_left = Wedge((0, 0), 1.0, 135, 180, width=0.1,
-                       facecolor='#ff5722', edgecolor='none', alpha=0.5)
+    wedge_left = Wedge((0, 0), gauge_radius, 135, 180, width=gauge_width,
+                       facecolor='#ff5722', edgecolor='white', linewidth=2, alpha=0.7)
     ax.add_patch(wedge_left)
 
     # 균형 영역 (녹색) - 135~45도
-    wedge_center = Wedge((0, 0), 1.0, 45, 135, width=0.1,
-                         facecolor='#4caf50', edgecolor='none', alpha=0.5)
+    wedge_center = Wedge((0, 0), gauge_radius, 45, 135, width=gauge_width,
+                         facecolor='#4caf50', edgecolor='white', linewidth=2, alpha=0.7)
     ax.add_patch(wedge_center)
 
     # 우뇌 영역 (파랑) - 45~0도
-    wedge_right = Wedge((0, 0), 1.0, 0, 45, width=0.1,
-                        facecolor='#2196f3', edgecolor='none', alpha=0.5)
+    wedge_right = Wedge((0, 0), gauge_radius, 0, 45, width=gauge_width,
+                        facecolor='#2196f3', edgecolor='white', linewidth=2, alpha=0.7)
     ax.add_patch(wedge_right)
 
-    # 테두리 원호
+    # 테두리 원호 - 더 굵게
     arc_theta = np.linspace(0, np.pi, 100)
-    arc_x_inner = 0.9 * np.cos(arc_theta)
-    arc_y_inner = 0.9 * np.sin(arc_theta)
-    arc_x_outer = 1.0 * np.cos(arc_theta)
-    arc_y_outer = 1.0 * np.sin(arc_theta)
-    ax.plot(arc_x_inner, arc_y_inner, 'k-', linewidth=2, alpha=0.3)
-    ax.plot(arc_x_outer, arc_y_outer, 'k-', linewidth=2, alpha=0.3)
+    arc_x_inner = (gauge_radius - gauge_width) * np.cos(arc_theta)
+    arc_y_inner = (gauge_radius - gauge_width) * np.sin(arc_theta)
+    arc_x_outer = gauge_radius * np.cos(arc_theta)
+    arc_y_outer = gauge_radius * np.sin(arc_theta)
+    ax.plot(arc_x_inner, arc_y_inner, 'k-', linewidth=3, alpha=0.4)
+    ax.plot(arc_x_outer, arc_y_outer, 'k-', linewidth=3, alpha=0.4)
+
+    # 각도 눈금 표시
+    for angle_deg in [0, 45, 90, 135, 180]:
+        angle_rad = np.radians(angle_deg)
+        x_tick = gauge_radius * 1.05 * np.cos(angle_rad)
+        y_tick = gauge_radius * 1.05 * np.sin(angle_rad)
+        ax.plot([gauge_radius * 0.95 * np.cos(angle_rad), x_tick],
+                [gauge_radius * 0.95 * np.sin(angle_rad), y_tick],
+                'k-', linewidth=2, alpha=0.5)
 
     # 바늘 위치 계산 (-100 좌뇌 ~ +100 우뇌)
     # balance_index: -100(좌뇌) ~ 0(균형) ~ +100(우뇌)
     # 각도: 180도(좌뇌) ~ 90도(균형) ~ 0도(우뇌)
     needle_angle = np.radians(90 - balance_index * 0.9)  # -100->180도, 0->90도, +100->0도
-    needle_length = 0.8
+    needle_length = gauge_radius - gauge_width * 0.5
     needle_x = needle_length * np.cos(needle_angle)
     needle_y = needle_length * np.sin(needle_angle)
 
-    # 바늘 그리기
-    ax.plot([0, needle_x], [0, needle_y], color='black', linewidth=5, zorder=10)
-    ax.plot(needle_x, needle_y, 'o', color='red', markersize=10, zorder=11)
-    ax.plot(0, 0, 'o', color='black', markersize=18, zorder=12)
+    # 바늘 그리기 - 더 굵고 명확하게
+    ax.plot([0, needle_x], [0, needle_y], color='#d32f2f', linewidth=6, zorder=10)
+    ax.plot(needle_x, needle_y, 'o', color='#d32f2f', markersize=14, zorder=11,
+            markeredgecolor='white', markeredgewidth=2)
+    ax.plot(0, 0, 'o', color='#333', markersize=22, zorder=12,
+            markeredgecolor='white', markeredgewidth=2)
 
-    # 라벨
-    ax.text(-1.15, 0.0, '좌뇌우세\n(Fp1)', ha='center', va='center', fontsize=11,
-            fontweight='bold', color='#ff5722')
-    ax.text(0, 1.05, '균형', ha='center', va='bottom', fontsize=11,
-            fontweight='bold', color='#4caf50')
-    ax.text(1.15, 0.0, '우뇌우세\n(Fp2)', ha='center', va='center', fontsize=11,
-            fontweight='bold', color='#2196f3')
+    # 라벨 - 크기 증가
+    ax.text(-1.5, 0.1, '좌뇌 우세\n(Fp1)', ha='center', va='center', fontsize=14,
+            fontweight='bold', color='#ff5722',
+            bbox=dict(boxstyle='round,pad=0.5', facecolor='white',
+                     edgecolor='#ff5722', linewidth=2, alpha=0.9))
+    ax.text(0, 1.3, '균형', ha='center', va='bottom', fontsize=14,
+            fontweight='bold', color='#4caf50',
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='white',
+                     edgecolor='#4caf50', linewidth=2, alpha=0.9))
+    ax.text(1.5, 0.1, '우뇌 우세\n(Fp2)', ha='center', va='center', fontsize=14,
+            fontweight='bold', color='#2196f3',
+            bbox=dict(boxstyle='round,pad=0.5', facecolor='white',
+                     edgecolor='#2196f3', linewidth=2, alpha=0.9))
 
-    # 수치 표시
-    ax.text(0, -0.35, f'좌뇌: {left_pct:.1f}%  |  우뇌: {right_pct:.1f}%',
-            ha='center', fontsize=12, fontweight='bold')
+    # 수치 표시 - 크기 증가 및 박스 추가
+    ax.text(0, -0.45, f'좌뇌: {left_pct:.1f}%  |  우뇌: {right_pct:.1f}%',
+            ha='center', fontsize=15, fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.6', facecolor='#f5f5f5',
+                     edgecolor='#999', linewidth=1.5, alpha=0.9))
 
-    # 상태 표시
+    # 상태 표시 - 더 크고 눈에 띄게
     if abs(balance_index) < 10:
         status = '균형'
         status_color = '#4caf50'
@@ -1127,13 +1147,17 @@ def plot_brain_balance_gauge(ax, fp1_total, fp2_total):
         status = '좌뇌 우세'
         status_color = '#ff5722'
 
-    ax.text(0, 0.35, status, ha='center', fontsize=13, fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor=status_color,
-                     edgecolor='white', alpha=0.6, linewidth=2))
+    ax.text(0, 0.45, status, ha='center', fontsize=17, fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.7', facecolor=status_color,
+                     edgecolor='white', alpha=0.85, linewidth=3))
 
-    # 축 범위 및 비율
-    ax.set_xlim(-1.3, 1.3)
-    ax.set_ylim(-0.5, 1.2)
+    # 균형 지수 표시 추가
+    ax.text(0, -0.75, f'균형 지수: {balance_index:+.1f}',
+            ha='center', fontsize=12, style='italic', color='#666')
+
+    # 축 범위 - 비율을 맞춰서 찌그러짐 방지
+    ax.set_xlim(-1.8, 1.8)
+    ax.set_ylim(-0.9, 1.6)
     ax.set_aspect('equal')
     ax.axis('off')
 
